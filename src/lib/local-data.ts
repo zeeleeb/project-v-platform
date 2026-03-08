@@ -56,6 +56,17 @@ export function getTransparencyScore(personId: number, personType: string) {
   return transparencyScores.find((s) => s.person_id === personId && s.person_type === personType) || null;
 }
 
+export function getCountyOfficials(countyName: string, state: string) {
+  // Match officials whose jurisdiction or county field matches the county name (case-insensitive)
+  const countyLower = countyName.toLowerCase();
+  return officials.filter((o) => {
+    const jurisdictionMatch = o.jurisdiction?.toLowerCase() === countyLower;
+    const countyFieldMatch = o.county?.toLowerCase() === countyLower;
+    const stateMatch = o.state === state;
+    return stateMatch && (jurisdictionMatch || countyFieldMatch);
+  });
+}
+
 export function searchByName(query: string) {
   const q = query.toLowerCase();
   const matchedOfficials = officials.filter((o) => o.name.toLowerCase().includes(q));

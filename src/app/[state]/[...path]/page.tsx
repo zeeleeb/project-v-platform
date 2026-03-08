@@ -1,7 +1,17 @@
 import { supabase } from "@/lib/supabase";
 import * as localData from "@/lib/local-data";
 import DossierPage from "@/components/DossierPage";
+import CountyPage from "@/components/CountyPage";
+import { getCountyBySlug } from "@/lib/counties";
 import { notFound } from "next/navigation";
+
+const STATE_NAMES: Record<string, string> = {
+  michigan: "Michigan",
+};
+
+const STATE_ABBREVS: Record<string, string> = {
+  michigan: "MI",
+};
 
 const useLocal = !process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL === "https://placeholder.supabase.co";
 
@@ -14,6 +24,26 @@ export default async function PersonPage({ params }: PageProps) {
 
   if (personSlug === "candidates") {
     return <div className="min-h-screen bg-gray-950 text-white p-8">Candidates page coming soon</div>;
+  }
+
+  // When path has 1 segment, check if it matches a county name first
+  if (params.path.length === 1) {
+    const countyName = getCountyBySlug(params.state, personSlug);
+    if (countyName) {
+      const stateName = STATE_NAMES[params.state] || params.state;
+      const stateAbbrev = STATE_ABBREVS[params.state] || params.state.toUpperCase().slice(0, 2);
+      const officials = useLocal
+        ? localData.getCountyOfficials(countyName, stateAbbrev)
+        : [];
+      return (
+        <CountyPage
+          countyName={countyName}
+          stateName={stateName}
+          stateSlug={params.state}
+          officials={officials}
+        />
+      );
+    }
   }
 
   /* eslint-disable @typescript-eslint/no-explicit-any */
