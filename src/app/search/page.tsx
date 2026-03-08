@@ -1,28 +1,31 @@
 import { supabase } from "@/lib/supabase";
+import * as localData from "@/lib/local-data";
 import Link from "next/link";
 import SearchBar from "@/components/SearchBar";
+
+const useLocal = !process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL === "https://placeholder.supabase.co";
 
 interface Official {
   id: number;
   name: string;
   slug: string;
-  title: string | null;
-  office: string | null;
-  level: string | null;
-  jurisdiction: string | null;
-  party: string | null;
-  state: string | null;
+  title?: string;
+  office?: string;
+  level?: string;
+  jurisdiction?: string;
+  party?: string;
+  state?: string;
 }
 
 interface Candidate {
   id: number;
   name: string;
   slug: string;
-  office_sought: string | null;
-  level: string | null;
-  jurisdiction: string | null;
-  party: string | null;
-  state: string | null;
+  office_sought?: string;
+  level?: string;
+  jurisdiction?: string;
+  party?: string;
+  state?: string;
 }
 
 interface PageProps {
@@ -35,20 +38,26 @@ export default async function SearchPage({ searchParams }: PageProps) {
   let candidates: Candidate[] = [];
 
   if (query.length >= 2) {
-    const [officialRes, candidateRes] = await Promise.all([
-      supabase
-        .from("officials")
-        .select("id, name, slug, title, office, level, jurisdiction, party, state")
-        .ilike("name", `%${query}%`)
-        .limit(20),
-      supabase
-        .from("candidates")
-        .select("id, name, slug, office_sought, level, jurisdiction, party, state")
-        .ilike("name", `%${query}%`)
-        .limit(20),
-    ]);
-    officials = officialRes.data || [];
-    candidates = candidateRes.data || [];
+    if (useLocal) {
+      const results = localData.searchByName(query);
+      officials = results.officials;
+      candidates = results.candidates;
+    } else {
+      const [officialRes, candidateRes] = await Promise.all([
+        supabase
+          .from("officials")
+          .select("id, name, slug, title, office, level, jurisdiction, party, state")
+          .ilike("name", `%${query}%`)
+          .limit(20),
+        supabase
+          .from("candidates")
+          .select("id, name, slug, office_sought, level, jurisdiction, party, state")
+          .ilike("name", `%${query}%`)
+          .limit(20),
+      ]);
+      officials = officialRes.data || [];
+      candidates = candidateRes.data || [];
+    }
   }
 
   return (

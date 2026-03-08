@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { MapContainer, TileLayer, GeoJSON } from "react-leaflet";
 import type { LatLngBoundsExpression, Layer, LeafletMouseEvent, PathOptions } from "leaflet";
 import type { Feature, FeatureCollection } from "geojson";
@@ -8,8 +8,6 @@ import MapController from "./MapController";
 import "leaflet/dist/leaflet.css";
 import "leaflet-defaulticon-compatibility/dist/leaflet-defaulticon-compatibility.css";
 import "leaflet-defaulticon-compatibility";
-
-import statesData from "../../public/geo/us-states-20m.json";
 
 type DrillLevel = {
   level: "national" | "state" | "county";
@@ -41,9 +39,17 @@ const US_BOUNDS: LatLngBoundsExpression = [
 
 export default function DrillDownMap() {
   const [drillLevel, setDrillLevel] = useState<DrillLevel>({ level: "national" });
+  const [statesData, setStatesData] = useState<FeatureCollection | null>(null);
   const [countyData, setCountyData] = useState<FeatureCollection | null>(null);
   const [bounds, setBounds] = useState<LatLngBoundsExpression | null>(null);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    fetch("/geo/us-states-20m.json")
+      .then((r) => r.json())
+      .then((data) => setStatesData(data as FeatureCollection))
+      .catch((err) => console.error("Failed to load states:", err));
+  }, []);
 
   const loadCountyData = useCallback(async (stateFips: string) => {
     setLoading(true);
@@ -145,10 +151,10 @@ export default function DrillDownMap() {
         />
         <MapController bounds={bounds} />
 
-        {drillLevel.level === "national" && (
+        {drillLevel.level === "national" && statesData && (
           <GeoJSON
             key="states"
-            data={statesData as unknown as FeatureCollection}
+            data={statesData}
             style={defaultStyle}
             onEachFeature={onEachState}
           />
